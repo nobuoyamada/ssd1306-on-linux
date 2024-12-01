@@ -37,6 +37,34 @@ static unsigned char buffer[32];
 static symbol scale = DEGREE_CELSIUS;   //Default unit for temperature.
 static bool test=false;
 
+int pos_x=0, pos_y=0;
+
+void parseAndDisplayValue(unsigned char *buf,const unsigned int size){
+
+    for(int i=0;i<size-1;i++){
+        if(buf[i]>='0' && buf[i]<='9'){
+            renderDigit((int)buf[i]-48,pos_x,pos_y);
+            pos_y+=16;
+            printk(KERN_ERR"KERN_ERR -- x:%d, y:%d",pos_x, pos_y);
+            printk(KERN_WARNING"KERN_WARNING -- x:%d, y:%d",pos_x, pos_y);
+            printk(KERN_NOTICE"KERN_NOTICE -- x:%d, y:%d",pos_x, pos_y);
+            printk(KERN_INFO"KERN_INFO -- x:%d, y:%d",pos_x, pos_y);
+            printk(KERN_DEBUG"KERN_DEBUG -- x:%d, y:%d",pos_x, pos_y);
+
+        }
+        else{
+            goto invalid;
+        }
+    }
+    pos_x+=2;
+    if(pos_x>8) pos_x=0;
+    pos_y=0;
+    
+    return;
+    invalid:
+        printk(KERN_ERR"Invalid data!");
+}
+
 /*Display Temperature Value on SSD1306*/
 /*Temperature value parsing is specific to Orange Pi 4 LTS Device.If on any other device, check the documentation and make changes accordingly.*/
 void parseAndDisplayTemp(unsigned char *buf,const unsigned int size){
@@ -123,6 +151,58 @@ static ssize_t ssd1306tempWrite(struct file * file,const char * user_buffer, siz
         return delta;
 }
 
+static ssize_t ssd1306valueWrite(struct file * file, const char * user_buffer, size_t count, loff_t *offs){
+    int size, discard, delta;
+
+    size = count<=sizeof(buffer)? count : sizeof(buffer);
+    discard = copy_from_user(buffer, user_buffer, size);
+    delta = size - discard;
+    if(buffer[0]=='R' || buffer[0]=='r'){       //Render test.
+        test=true;
+        clearDisplay();
+        renderTest();
+        return delta;
+    }
+    else if(buffer[0]=='X' || buffer[0]=='x'){
+        test=false;
+        clearDisplay();
+        return delta;
+    }
+    if(test){
+        test=false;
+        clearDisplay();
+    }
+    parseAndDisplayValue(buffer,size);
+    
+    return delta;
+}
+
+
+static long ssd1306_ioctl(struct file *filp, unsigned int cmd, unsigned long arg){
+    int value;
+
+    switch(cmd){
+    case SET_CONTRAST_IOCTL:
+
+        if (copy_from_user(&value, (int __user *)arg, sizeof(value))) 
+            return -EFAULT;
+        setContrast(value);
+        break;
+    case SET_INVERSE_IOCTL:
+
+        if (copy_from_user(&value, (int __user *)arg, sizeof(value))) 
+            return -EFAULT;
+        setInverseDisplay();
+        break;
+
+    default:
+		printk(KERN_WARNING "unsupported command %d\n", cmd);
+		return -ENOTTY;
+    }
+    return 0;
+
+}
+
 
 /*Handle opening device file - Nothing to do here*/
 static int ssd1306tempOpen(struct inode * deviceFile,struct file *instance){
@@ -139,11 +219,13 @@ static struct file_operations ssd1306temp_fOps={
         .owner=THIS_MODULE,
         .open=ssd1306tempOpen,
         .release=ssd1306tempClose,
-        .write=ssd1306tempWrite
+        //.write=ssd1306tempWrite
+        .write=ssd1306valueWrite,
+        .unlocked_ioctl=ssd1306_ioctl
 };
 
 //I2C Adapter -I2c Bus
-#define I2C_BUS 8                           //For Orange Pi 4 LTS Device. Checkout documentation for your device for the bus number.
+#define I2C_BUS 4                           //For Orange Pi 4 LTS Device. Checkout documentation for your device for the bus number.
 struct i2c_adapter *ssd1306_i2c_adapter;
 
 //I2c Client/Slave -SSD1306
@@ -170,10 +252,10 @@ static int ssd1306_i2c_probe(struct i2c_client * client, const struct i2c_device
 }
 
     //Remove function for SSD1306
-static int ssd1306_i2c_remove(struct i2c_client * client){
+static void ssd1306_i2c_remove(struct i2c_client * client){
     clearDisplay();
     sendCommand(SSD1306_DISPLAY_OFF); //Entire display OFF
-    return 0;
+    //return 0;
 }
 
     //SSD1306 driver structure

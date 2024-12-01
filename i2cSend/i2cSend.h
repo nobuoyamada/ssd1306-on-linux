@@ -27,6 +27,7 @@
 #define SSD1306_SET_PRE_CHARGE_PERIOD       0xd9
 #define SSD1306_SET_VCOMH_DESELECT_LEVEL    0xdb
 #define SSD1306_SET_SCROLL_OFF              0x2e
+#define SSD1306_SET_INVERSE                 0xa7
 
 /*Initialization values*/
 #define CONTRAST                0xff

@@ -133,3 +133,12 @@ void clearDisplay(void){
         sendDataByte(NULL_BYTE);
     }
 }
+
+void setContrast(int contrast){
+    sendCommand(SSD1306_SET_CONTRAST); 
+    sendCommand(contrast); 
+}
+
+void setInverseDisplay(void){
+    sendCommand(SSD1306_SET_INVERSE); 
+}

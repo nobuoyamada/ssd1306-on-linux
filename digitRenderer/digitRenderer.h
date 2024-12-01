@@ -26,9 +26,15 @@ typedef enum{
 
 #define NULL_BYTE               0x00
 
+//#define SET_CONTRAST_IOCTL      0x00
+#define SET_CONTRAST_IOCTL _IOW('d', 1, int)
+#define SET_INVERSE_IOCTL _IOW('d', 2, int)
+
 void renderDigit(int digit,const int x,const int y);
 void renderSymbol(symbol sym,const int x,const int y);
 void renderTest(void);
 void initDisplay(void);
 void clearDisplay(void);
+void setContrast(int contrast);
+void setInverseDisplay(void);
 #endif
