@@ -38,6 +38,46 @@ static symbol scale = DEGREE_CELSIUS;   //Default unit for temperature.
 static bool test=false;
 
 int pos_x=0, pos_y=0;
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/init.h>
+
+static void renderDateTime(int num, int x, int y) {
+    int divisor = 1;
+    int digit=0;
+    // 最上位桁の重みを計算する
+    while (num / divisor >= 10) {
+        divisor *= 10;
+    }
+
+    if(divisor < 10){
+        renderDigit(0, x, y);
+        y+=13;
+    }
+
+    // 各桁を上位から順に取り出して表示する
+    while (divisor > 0) {
+        digit = num / divisor;
+        //printk(KERN_INFO "%d ", digit);
+        renderDigit(digit, x, y);
+        y+=13;
+        num %= divisor;
+        divisor /= 10;
+    }
+}
+
+
+
+void showTimeInfo(struct time_info tm){
+    // printk(KERN_DEBUG "shotimeinfo\n");
+    renderDateTime(tm.tm_year,0,0); 
+    renderDateTime(tm.tm_mon,0,64); 
+    renderDateTime(tm.tm_mday,0,96); 
+    renderDateTime(tm.tm_hour,2,0); 
+    renderDateTime(tm.tm_min,2,32); 
+    renderDateTime(tm.tm_sec,2,64); 
+
+}
 
 void parseAndDisplayValue(unsigned char *buf,const unsigned int size){
 
@@ -177,9 +217,21 @@ static ssize_t ssd1306valueWrite(struct file * file, const char * user_buffer, s
     return delta;
 }
 
+static ssize_t ssd1306valueRead(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
+{
+	// printk("mydevice_read");
+	if(count > 32) count = 32;
+
+	// struct _mydevice_file_data *p = filp->private_data;
+	if (copy_to_user(buf, buffer, count) != 0) {
+		return -EFAULT;
+	}
+	return count;
+}
 
 static long ssd1306_ioctl(struct file *filp, unsigned int cmd, unsigned long arg){
     int value;
+    struct time_info timevalue;
 
     switch(cmd){
     case SET_CONTRAST_IOCTL:
@@ -193,6 +245,19 @@ static long ssd1306_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
         if (copy_from_user(&value, (int __user *)arg, sizeof(value))) 
             return -EFAULT;
         setInverseDisplay();
+        break;
+    case CLEAR_DISPLAY_IOCTL:
+        // if (copy_from_user(&value, (int __user *)arg, sizeof(value))) 
+        //     return -EFAULT;
+        clearDisplay();
+        break;
+
+    case SHOW_TIME_IOCTL:
+        // printk(KERN_DEBUG "SHOW_TIME_IOCTL\n");
+        if (copy_from_user(&timevalue, (int __user *)arg, sizeof(timevalue))) 
+            return -EFAULT;
+        // printk(KERN_DEBUG "copy_from_user\n");
+        showTimeInfo(timevalue);
         break;
 
     default:
@@ -221,6 +286,7 @@ static struct file_operations ssd1306temp_fOps={
         .release=ssd1306tempClose,
         //.write=ssd1306tempWrite
         .write=ssd1306valueWrite,
+        .read=ssd1306valueRead,
         .unlocked_ioctl=ssd1306_ioctl
 };
 

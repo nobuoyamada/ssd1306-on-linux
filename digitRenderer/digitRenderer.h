@@ -29,6 +29,17 @@ typedef enum{
 //#define SET_CONTRAST_IOCTL      0x00
 #define SET_CONTRAST_IOCTL _IOW('d', 1, int)
 #define SET_INVERSE_IOCTL _IOW('d', 2, int)
+#define SHOW_TIME_IOCTL _IOW('d', 3, int)
+#define CLEAR_DISPLAY_IOCTL _IOW('d', 4, int)
+
+struct time_info { 
+    int tm_year; 
+    int tm_mon; 
+    int tm_mday; 
+    int tm_hour; 
+    int tm_min; 
+    int tm_sec;
+};
 
 void renderDigit(int digit,const int x,const int y);
 void renderSymbol(symbol sym,const int x,const int y);
@@ -37,4 +48,5 @@ void initDisplay(void);
 void clearDisplay(void);
 void setContrast(int contrast);
 void setInverseDisplay(void);
+void showTimeInfo(struct time_info tm);
 #endif
