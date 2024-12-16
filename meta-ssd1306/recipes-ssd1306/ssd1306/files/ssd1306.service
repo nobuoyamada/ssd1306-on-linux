@@ -1,0 +1,8 @@
+[Unit]
+Description=Load SSD1306 module
+
+[Service]
+ExecStart=/etc/init.d/ssd1306_load.sh
+
+[Install]
+WantedBy=multi-user.target

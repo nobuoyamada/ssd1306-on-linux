@@ -1,0 +1,9 @@
+[Unit]
+Description=Current time on SSD1306
+
+[Service]
+ExecStart=/usr/bin/currenttime
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

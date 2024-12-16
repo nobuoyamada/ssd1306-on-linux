@@ -54,7 +54,7 @@ int main() {
         lseek(fd, 0, SEEK_SET);
         read(fd, buffer, sizeof(buffer)-1);
         value = atoi(buffer);
-        printf("value: %d\n",value);
+        // printf("value: %d\n",value);
         if(value==1){
             time_kernel = getCurrentTime();
             if (ioctl(fd, SHOW_TIME_IOCTL, &time_kernel) < 0) {
